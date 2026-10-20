@@ -1,6 +1,8 @@
+import os
+import json
 from openai import OpenAI
 from dotenv import load_dotenv
-import os
+from tools import TOOLS, FUNCTION_NAME_TO_FUNCTION_MAP
 
 load_dotenv()
 
@@ -13,7 +15,10 @@ client = OpenAI(
     api_key=API_KEY
 )
 
-messages = []  # context / memory
+messages = [{
+    "role":"system",
+    "content":"Act as a humbal person and respond always within 20 w ords"
+}]  # context / memory
 
 def assistance_loop():
     while True:
@@ -29,15 +34,44 @@ def assistance_loop():
 
         response = client.chat.completions.create(
             model=MODEL,
-            messages=messages
+            messages=messages,
+            tools=TOOLS
         )
+
+        msg = response.choices[0].message
+
+        if(response.choices[0].finish_reason == "tool_calls"):
+            messages.append(msg.model_dump())
+
+            for tool_call in response.choices[0].message.tool_calls:
+                tool_call_id = tool_call.id
+                fun_name = tool_call.function.name
+                fun_arg = json.loads(tool_call.function.arguments)
+
+                fn = FUNCTION_NAME_TO_FUNCTION_MAP[fun_name]
+
+                result = fn(**fun_arg)
+
+                messages.append({
+                    "role":"tool",
+                    "tool_call_id":tool_call_id,
+                    "content":result
+                })
+
+            response = client.chat.completions.create(
+                model=MODEL,
+                messages=messages
+                )
+
+            msg = response.choices[0].message
+
 
         messages.append({
             "role":"assistance",
-            "content":response.choices[0].message.content
+            "content": msg.content
         })
 
-        print("\nAssistance : ",response.choices[0].message.content)
+        print("\nAssistance : ", msg.content)
 
 
 if __name__ == "__main__":
