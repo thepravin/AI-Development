@@ -13,6 +13,8 @@ client = OpenAI(
     api_key=API_KEY
 )
 
+messages = []  # context / memory
+
 def assistance_loop():
     while True:
         user_input = input("\nYOU : ")
@@ -20,15 +22,20 @@ def assistance_loop():
         if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
             break
 
+        messages.append({
+            "role":"user",
+            "content":user_input
+        })
+
         response = client.chat.completions.create(
             model=MODEL,
-            messages=[
-                {
-                    "role":"user",
-                    "content":user_input
-                }
-            ]
+            messages=messages
         )
+
+        messages.append({
+            "role":"assistance",
+            "content":response.choices[0].message.content
+        })
 
         print("\nAssistance : ",response.choices[0].message.content)
 
