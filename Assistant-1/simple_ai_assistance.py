@@ -32,15 +32,20 @@ def assistance_loop():
             "content":user_input
         })
 
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=messages,
-            tools=TOOLS
-        )
 
-        msg = response.choices[0].message
+        # Chained tool calling
+        while True:
+            response = client.chat.completions.create(
+                model=MODEL,
+                messages=messages,
+                tools=TOOLS
+            )
 
-        if(response.choices[0].finish_reason == "tool_calls"):
+            msg = response.choices[0].message
+
+            if(response.choices[0].finish_reason != "tool_calls"):
+                break
+
             messages.append(msg.model_dump())
 
             for tool_call in response.choices[0].message.tool_calls:
@@ -57,13 +62,6 @@ def assistance_loop():
                     "tool_call_id":tool_call_id,
                     "content":result
                 })
-
-            response = client.chat.completions.create(
-                model=MODEL,
-                messages=messages
-                )
-
-            msg = response.choices[0].message
 
 
         messages.append({
