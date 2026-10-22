@@ -38,6 +38,7 @@ def assistance_loop():
 
 
         # Chained tool calling
+        final_msg = None
         for step in range(MAX_STEPS):
             response = client.chat.completions.create(
                 model=MODEL,
@@ -47,7 +48,8 @@ def assistance_loop():
 
             msg = response.choices[0].message
 
-            if(response.choices[0].finish_reason != "tool_calls"):
+            if response.choices[0].finish_reason != "tool_calls":
+                final_msg = msg
                 break
 
             log(f"Step : {step+1} Model requested {len(msg.tool_calls)} tool calls")
@@ -61,22 +63,19 @@ def assistance_loop():
                     "tool_call_id":tool_call.id,
                     "content":result
                 })
-        else:
-            # Ran out of steps and model never gave the final answer
-            fallback= "Sorry, I could not finish this within the step limit."
-            messages.append({
-                "role":"assistance",
-                "content":fallback
-            })
-            continue
 
+        if final_msg is None:
+            # Ran out of steps and model never gave the final answer
+            final_msg_content = "Sorry, I could not finish this within the step limit."
+        else:
+            final_msg_content = final_msg.content or ""
 
         messages.append({
-            "role":"assistance",
-            "content": msg.content
+            "role":"assistant",
+            "content": final_msg_content
         })
 
-        print("\nAssistance : ", (msg.content or ""))
+        print("\nAssistance : ", final_msg_content)
 
 
 if __name__ == "__main__":
