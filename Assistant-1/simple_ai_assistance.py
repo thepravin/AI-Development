@@ -2,7 +2,8 @@ import os
 import json
 from openai import OpenAI
 from dotenv import load_dotenv
-from tools import TOOLS, FUNCTION_NAME_TO_FUNCTION_MAP
+from utils.utilis import log
+from tools import TOOLS, run_tools
 
 load_dotenv()
 
@@ -49,22 +50,15 @@ def assistance_loop():
             if(response.choices[0].finish_reason != "tool_calls"):
                 break
 
+            log(f"Step : {step+1} Model requested {len(msg.tool_calls)} tool calls")
+
             messages.append(msg.model_dump())
 
             for tool_call in response.choices[0].message.tool_calls:
-                tool_call_id = tool_call.id
-                fun_name = tool_call.function.name
-
-                try:
-                    fun_arg = json.loads(tool_call.function.arguments)
-                    fn = FUNCTION_NAME_TO_FUNCTION_MAP[fun_name]
-                    result = fn(**fun_arg)
-                except Exception as e:
-                    result = f"Error while running function:{fun_name} : {e}"
-
+                result = run_tools(tool_call)
                 messages.append({
                     "role":"tool",
-                    "tool_call_id":tool_call_id,
+                    "tool_call_id":tool_call.id,
                     "content":result
                 })
         else:
@@ -82,7 +76,7 @@ def assistance_loop():
             "content": msg.content
         })
 
-        print("\nAssistance : ", msg.content)
+        print("\nAssistance : ", (msg.content or ""))
 
 
 if __name__ == "__main__":
