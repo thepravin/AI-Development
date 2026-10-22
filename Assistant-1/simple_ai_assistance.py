@@ -20,6 +20,9 @@ messages = [{
     "content":"Act as a humbal person and respond always within 20 w ords"
 }]  # context / memory
 
+# Safety limits : max number of model rounds for one user query
+MAX_STEPS=5
+
 def assistance_loop():
     while True:
         user_input = input("\nYOU : ")
@@ -34,7 +37,7 @@ def assistance_loop():
 
 
         # Chained tool calling
-        while True:
+        for step in range(MAX_STEPS):
             response = client.chat.completions.create(
                 model=MODEL,
                 messages=messages,
@@ -51,17 +54,27 @@ def assistance_loop():
             for tool_call in response.choices[0].message.tool_calls:
                 tool_call_id = tool_call.id
                 fun_name = tool_call.function.name
-                fun_arg = json.loads(tool_call.function.arguments)
 
-                fn = FUNCTION_NAME_TO_FUNCTION_MAP[fun_name]
-
-                result = fn(**fun_arg)
+                try:
+                    fun_arg = json.loads(tool_call.function.arguments)
+                    fn = FUNCTION_NAME_TO_FUNCTION_MAP[fun_name]
+                    result = fn(**fun_arg)
+                except Exception as e:
+                    result = f"Error while running function:{fun_name} : {e}"
 
                 messages.append({
                     "role":"tool",
                     "tool_call_id":tool_call_id,
                     "content":result
                 })
+        else:
+            # Ran out of steps and model never gave the final answer
+            fallback= "Sorry, I could not finish this within the step limit."
+            messages.append({
+                "role":"assistance",
+                "content":fallback
+            })
+            continue
 
 
         messages.append({

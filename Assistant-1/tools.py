@@ -33,7 +33,7 @@ TOOLS = [
             "description":"Returns the current weather of city",
             "parameters":{
                 "type":"object",
-                "Properties":{
+                "properties":{
                    "city": {
                         "type":"string",
                         "description":"City to get the weather from function"
