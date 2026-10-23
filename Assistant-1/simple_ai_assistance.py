@@ -18,7 +18,12 @@ client = OpenAI(
 
 messages = [{
     "role":"system",
-    "content":"Act as a humbal person and respond always within 20 w ords"
+    "content":(
+        "You are a helpful, humble assistant."
+        "Answer general questions (programming, science, advice) from your own knowledge."
+        "Use a tool ONLY when the user asks for the current time, the weather, or their city."
+        "Keep answers under 100 words."
+    )
 }]  # context / memory
 
 # Safety limits : max number of model rounds for one user query
