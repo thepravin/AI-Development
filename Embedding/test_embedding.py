@@ -10,7 +10,7 @@ client = OpenAI(
 )
 
 response = client.embeddings.create(
-    model="nomic-embed-text",
+    model=os.getenv("EMBEDDING_MODEL"),
     input="I am a good boy"
 )
 
