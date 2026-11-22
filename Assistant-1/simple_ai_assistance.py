@@ -105,7 +105,7 @@ def stream_chat(history):
     if assistance_label_printed:
         print()
 
-    return full_response, list(calls)
+    return full_response, list(calls.values())
 
 
 
